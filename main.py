@@ -65,6 +65,9 @@ def main():
     # making 2d numpy array into list
     mia_list = mia_list.tolist()
 
+    # clearing the spreadsheet with the given range
+    sh.values_clear("'MIA List 1'!A1:A1000")
+
     # gspread method that updates the google sheet while only using 1 api call
 
     # first takes the in the name of the sheet and the starting cell
