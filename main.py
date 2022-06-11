@@ -12,7 +12,7 @@ from date import *
 np.set_printoptions(threshold=np.inf)
 
 
-def list_parsing(raw_data):
+def cur_week_list(raw_data):
     """
     - The function will parse through the array and remove all rows that are filled with empty space
       is a row filled with ("").
@@ -80,6 +80,41 @@ def last_week_list(raw_data):
     return mia_list
 
 
+def format_sheet( mia_list_sheet):
+    # Adding a column title to column A and C
+    mia_list_sheet.update('C1', 'Current Week')
+    mia_list_sheet.update('A1', 'Last Week')
+
+    # Formatting the title to be bold
+    mia_list_sheet.format('A1:C1', {'textFormat': {'bold': True}})
+
+
+def write_cur_week(mia_list, sh):
+    # gspread method that updates the Google sheet while only using 1 api call
+    # First takes the in the name of the sheet and the starting cell
+    # The param is how the data will be input either rows or columns or raw. (raw means the data will be used
+    #       as is and will not be parsed)
+    # The body is the list that will be inputted into the sheet
+    sh.values_update(
+        'MIA List 1!C3',
+        params={'valueInputOption': 'RAW'},
+        body={'values': mia_list}
+    )
+
+
+def write_last_week(mia_list, sh):
+    # gspread method that updates the Google sheet while only using 1 api call
+    # First takes the in the name of the sheet and the starting cell
+    # The param is how the data will be input either rows or columns or raw. (raw means the data will be used
+    #       as is and will not be parsed)
+    # The body is the list that will be inputted into the sheet
+    sh.values_update(
+        'MIA List 1!A3',
+        params={'valueInputOption': 'RAW'},
+        body={'values': mia_list}
+    )
+
+
 def main():
     # Linking the sheets to the code
     sa = gspread.service_account()
@@ -94,7 +129,7 @@ def main():
     raw_array = np.array(worksheet.get_all_values())
 
     # storing the 2d array returned by list_parsing
-    mia_list = list_parsing(raw_array)
+    mia_list = cur_week_list(raw_array)
 
     # clearing the spreadsheet with the given range
     sh.values_clear("'MIA List 1'!A1:C1000")
@@ -102,23 +137,9 @@ def main():
     # Opening the MIA List sheet
     mia_list_sheet = sh.worksheet('MIA List 1')
 
-    # Adding a column title to column A and C
-    mia_list_sheet.update('C1', 'Current Week')
-    mia_list_sheet.update('A1', 'Last Week')
-
-    # Formatting the title to be bold
-    mia_list_sheet.format('A1:C1', {'textFormat': {'bold': True}})
-
-    # gspread method that updates the Google sheet while only using 1 api call
-    # First takes the in the name of the sheet and the starting cell
-    # The param is how the data will be input either rows or columns or raw. (raw means the data will be used
-    #       as is and will not be parsed)
-    # The body is the list that will be inputted into the sheet
-    sh.values_update(
-        'MIA List 1!C3',
-        params={'valueInputOption': 'RAW'},
-        body={'values': mia_list}
-    )
+    # format and print lists needed
+    format_sheet(mia_list_sheet)
+    write_cur_week(mia_list, sh)
 
 
 if __name__ == '__main__':
