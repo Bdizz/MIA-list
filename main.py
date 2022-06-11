@@ -8,15 +8,12 @@
 
 import gspread
 import numpy as np
-from date import get_week_dates
+from date import *
 np.set_printoptions(threshold=np.inf)
 
-COLUMN_BUFFER = 7
 
-
-def list_parsing(raw_data, values):
+def list_parsing(raw_data):
     """
-
     - The function will parse through the array and remove all rows that are filled with empty space
       is a row filled with ("").
 
@@ -24,16 +21,13 @@ def list_parsing(raw_data, values):
 
     - The function will lastly use numpy to get the 2nd item from each row
 
-
-    :parameter: raw_data (numpy array): the numpy array that will be parsed through
-
+    :param raw_data: (numpy array): the numpy array that will be parsed through
 
     :return: A parsed array
     """
-
-    # values made based on the hard coded range
-    starting_range = values[0]
-    ending_range = values[1]
+    # Making a list containing the first and last day of the week
+    week_list = get_week_dates()
+    week_list = adjust_date_list(week_list)
 
     # removing all rows with only ("")
     spaceless_array = raw_data[~np.all(raw_data == '', axis=1)]
@@ -43,14 +37,45 @@ def list_parsing(raw_data, values):
 
     # deleting rows that contain an 'X' or 'x' based on the given range of columns
     mia_list = np.delete(spaceless_array, np.where(
-        (spaceless_array[:, starting_range:ending_range] == 'X') |
-        (spaceless_array[:, starting_range:ending_range] == 'x'))[0], axis=0)
+        (spaceless_array[:, week_list[0]:week_list[1]] == 'X') |
+        (spaceless_array[:, week_list[0]:week_list[1]] == 'x'))[0], axis=0)
 
-    # using numpy library we get the second item from each row and that's all were left with
+    # using numpy slicing we get the second column of the matrix
     mia_list = mia_list[:, 1]
 
     # reshaping the list into a 2d array
     mia_list = np.reshape(mia_list, (mia_list.size, 1))
+
+    # making 2d numpy array into list
+    mia_list = mia_list.tolist()
+
+    return mia_list
+
+
+def last_week_list(raw_data):
+    """
+    - The function will make a list of dates (last monday and sunday)
+
+    - Then will adjust the dates to make them equal to the column values of the MIA LIST
+
+    - Then will pull all mia students for last week and make a new list with those students
+
+    :param raw_data: (numpy array)
+
+    :return: A list of students that did not have a mark ('X' or 'x') for attendance last week
+    """
+    last_week = get_last_week()
+    last_week = adjust_date_list(last_week)
+
+    spaceless_array = raw_data[~np.all(raw_data == '', axis=1)]
+
+    mia_list = np.delete(spaceless_array, np.where(
+        (spaceless_array[:, last_week[0]:last_week[1]] == 'X') |
+        (spaceless_array[:, last_week[0]:last_week[1]] == 'x'))[0], axis=0)
+
+    mia_list = mia_list[:, 1]
+
+    mia_list = np.reshape(mia_list, (mia_list, 1))
 
     return mia_list
 
@@ -68,21 +93,21 @@ def main():
     # getting all values from the mia list and directly turning it into a np array
     raw_array = np.array(worksheet.get_all_values())
 
-    # Making a list containing the first and last day of the week
-    week_list = get_week_dates()
-
-    # Adding the column buffer
-    week_list[0] = week_list[0] + COLUMN_BUFFER
-    week_list[1] = week_list[1] + COLUMN_BUFFER
-
     # storing the 2d array returned by list_parsing
-    mia_list = list_parsing(raw_array, week_list)
-
-    # making 2d numpy array into list
-    mia_list = mia_list.tolist()
+    mia_list = list_parsing(raw_array)
 
     # clearing the spreadsheet with the given range
-    sh.values_clear("'MIA List 1'!A1:A1000")
+    sh.values_clear("'MIA List 1'!A1:C1000")
+
+    # Opening the MIA List sheet
+    mia_list_sheet = sh.worksheet('MIA List 1')
+
+    # Adding a column title to column A and C
+    mia_list_sheet.update('C1', 'Current Week')
+    mia_list_sheet.update('A1', 'Last Week')
+
+    # Formatting the title to be bold
+    mia_list_sheet.format('A1:C1', {'textFormat': {'bold': True}})
 
     # gspread method that updates the Google sheet while only using 1 api call
     # First takes the in the name of the sheet and the starting cell
@@ -90,7 +115,7 @@ def main():
     #       as is and will not be parsed)
     # The body is the list that will be inputted into the sheet
     sh.values_update(
-        'MIA List 1!A1',
+        'MIA List 1!C3',
         params={'valueInputOption': 'RAW'},
         body={'values': mia_list}
     )
