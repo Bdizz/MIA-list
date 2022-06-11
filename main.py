@@ -8,7 +8,10 @@
 
 import gspread
 import numpy as np
+from date import get_week_dates
 np.set_printoptions(threshold=np.inf)
+
+COLUMN_BUFFER = 7
 
 
 def list_parsing(raw_data, values):
@@ -28,6 +31,7 @@ def list_parsing(raw_data, values):
     :return: A parsed array
     """
 
+    # values made based on the hard coded range
     starting_range = values[0]
     ending_range = values[1]
 
@@ -37,6 +41,7 @@ def list_parsing(raw_data, values):
     # removing all rows that contain an 'X' or 'x'
     # mia_list = spaceless_array[~np.any((spaceless_array == 'X') | (spaceless_array == 'x'), axis=1)]
 
+    # deleting rows that contain an 'X' or 'x' based on the given range of columns
     mia_list = np.delete(spaceless_array, np.where(
         (spaceless_array[:, starting_range:ending_range] == 'X') |
         (spaceless_array[:, starting_range:ending_range] == 'x'))[0], axis=0)
@@ -63,9 +68,15 @@ def main():
     # getting all values from the mia list and directly turning it into a np array
     raw_array = np.array(worksheet.get_all_values())
 
+    # Making a list containing the first and last day of the week
+    week_list = get_week_dates()
+
+    # Adding the column buffer
+    week_list[0] = week_list[0] + COLUMN_BUFFER
+    week_list[1] = week_list[1] + COLUMN_BUFFER
+
     # storing the 2d array returned by list_parsing
-    week_one = [6, 11]
-    mia_list = list_parsing(raw_array, week_one)
+    mia_list = list_parsing(raw_array, week_list)
 
     # making 2d numpy array into list
     mia_list = mia_list.tolist()
