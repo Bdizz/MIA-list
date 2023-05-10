@@ -2,8 +2,6 @@
 # Creates Google Sheet containing list of MIA students based
 # off of master list stored in Google Sheet
 #
-# (C) 2022 Brandon DiZuzio, Florida, United States of America
-# email Bdizuzio@gmail.com
 # -----------------------------------------------------------
 
 import gspread
