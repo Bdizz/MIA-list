@@ -113,8 +113,6 @@ def format_sheet(mia_list_sheet):
 
 
 def write_cur_week(mia_list, sh):
-    # TODO make the write functions into one function
-
     # gspread method that updates the Google sheet while only using 1 api call
     # First takes the in the name of the sheet and the starting cell
     # The param is how the data will be input either rows or columns or raw. (raw means the data will be used
