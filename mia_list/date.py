@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 
+# Used to align the date range in the MIA list
 COLUMN_BUFFER = 6
 
 
