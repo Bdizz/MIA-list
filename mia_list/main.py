@@ -12,36 +12,32 @@ np.set_printoptions(threshold=np.inf)
 
 def cur_week_list(raw_data):
     """
-    - The function will parse through the array and remove all rows that are filled with empty space
-      is a row filled with ("").
+    This function generates a list of students who are missing in the current week based on the provided raw data.
 
-    - The function will then parse through the array and remove all rows that contain an 'X' or 'x'
+    Args:
+        raw_data (numpy array): The raw data containing the attendance records.
 
-    - The function will lastly use numpy to get the 2nd item from each row
-
-    :param raw_data: (numpy array): the numpy array that will be parsed through
-
-    :return: A parsed array
+    Returns:
+        list: A list of students who are missing in the current week.
     """
-    # Making a list containing the first and last day of the week
-    week_list = get_week_dates()
-    week_list = adjust_date_list(week_list)
+    # Getting the list of dates for the current week
+    week_list = adjust_date_list(get_week_dates())
 
-    # removing all rows with only ("")
+    # Removing rows with empty values
     spaceless_array = raw_data[~np.all(raw_data == '', axis=1)]
 
-    # deleting rows that contain an 'X' or 'x' based on the given range of columns
+    # Deleting rows containing 'X' or 'x' for the current week's dates
     mia_list = np.delete(spaceless_array, np.where(
         (spaceless_array[:, week_list[0]:week_list[1]] == 'X') |
         (spaceless_array[:, week_list[0]:week_list[1]] == 'x'))[0], axis=0)
 
-    # using numpy slicing we get the second column of the matrix
+    # Selecting the second column from the remaining rows
     mia_list = mia_list[:, 1]
 
-    # reshaping the list into a 2d array
+    # Reshaping the array to a column vector
     mia_list = np.reshape(mia_list, (mia_list.size, 1))
 
-    # making 2d numpy array into list
+    # Converting the numpy array to a nested list
     mia_list = mia_list.tolist()
 
     return mia_list
@@ -49,29 +45,32 @@ def cur_week_list(raw_data):
 
 def last_week_list(raw_data):
     """
-    - The function will make a list of dates (last monday and sunday)
+    This function generates a list of students who were missing in the last week based on the provided raw data.
 
-    - Then will adjust the dates to make them equal to the column values of the MIA LIST
+    Args:
+        raw_data (numpy array): The raw data containing the attendance records.
 
-    - Then will pull all mia students for last week and make a new list with those students
-
-    :param raw_data: (numpy array)
-
-    :return: A list of students that did not have a mark ('X' or 'x') for attendance last week
+    Returns:
+        list: A list of students who did not have a mark ('X' or 'x') for attendance last week.
     """
-    last_week = get_last_week()
-    last_week = adjust_date_list(last_week)
+    # Getting the list of dates for the last week and adjusting them
+    last_week = adjust_date_list(get_last_week())
 
+    # Removing rows with empty values
     spaceless_array = raw_data[~np.all(raw_data == '', axis=1)]
 
+    # Deleting rows containing 'X' or 'x' for the last week's dates
     mia_list = np.delete(spaceless_array, np.where(
         (spaceless_array[:, last_week[0]:last_week[1]] == 'X') |
         (spaceless_array[:, last_week[0]:last_week[1]] == 'x'))[0], axis=0)
 
+    # Selecting the second column from the remaining rows
     mia_list = mia_list[:, 1]
 
+    # Reshaping the array to a column vector
     mia_list = np.reshape(mia_list, (mia_list.size, 1))
 
+    # Converting the numpy array to a list
     mia_list = mia_list.tolist()
 
     return mia_list
@@ -79,109 +78,110 @@ def last_week_list(raw_data):
 
 def make_month_list(raw_data):
     """
-        - The function will remove any student that has been marked for attendance
+    This function generates a list of students who were missing for the entire month based on the provided raw data.
 
-        - Then will pull all mia students for the month and make a new list with those students
+    Args:
+        raw_data (numpy array): The raw data containing the attendance records.
 
-        :param raw_data: (numpy array)
-
-        :return: A list of students that did not have a mark ('X' or 'x') for the month
-       """
-
+    Returns:
+        list: A list of students who did not have a mark ('X' or 'x') for the entire month.
+    """
+    # Removing rows with empty values
     spaceless_array = raw_data[~np.all(raw_data == '', axis=1)]
 
-    # removing all rows that contain an 'X' or 'x'
+    # Removing rows containing 'X' or 'x' in any column
     mia_list = spaceless_array[~np.any((spaceless_array == 'X') | (spaceless_array == 'x'), axis=1)]
 
+    # Selecting the second column from the remaining rows
     mia_list = mia_list[:, 1]
 
+    # Reshaping the array to a column vector
     mia_list = np.reshape(mia_list, (mia_list.size, 1))
 
+    # Converting the numpy array to a list
     mia_list = mia_list.tolist()
 
     return mia_list
 
 
 def format_sheet(mia_list_sheet):
-    # Adding a column title to column A and C
+    """
+    Formats the MIA List sheet by adding column titles and applying formatting.
+
+    Args:
+        mia_list_sheet: The Google Sheet object representing the MIA List sheet.
+
+    Returns:
+        None
+    """
+    # Adding column titles to column A, C, and E
     mia_list_sheet.update('C1', 'Current Week')
     mia_list_sheet.update('A1', 'Last Week')
     mia_list_sheet.update('E1', 'Entire Month')
 
-    # Formatting the title to be bold
+    # Formatting the titles to be bold
     mia_list_sheet.format('A1:E1', {'textFormat': {'bold': True}})
 
 
-def write_cur_week(mia_list, sh):
-    # gspread method that updates the Google sheet while only using 1 api call
-    # First takes the in the name of the sheet and the starting cell
-    # The param is how the data will be input either rows or columns or raw. (raw means the data will be used
-    #       as is and will not be parsed)
-    # The body is the list that will be inputted into the sheet
+def write_data(mia_list, sh, cell):
+    """
+    Writes the provided data to the specified cell in the given Google Sheet.
+
+    Args:
+        mia_list: The list of data to be written.
+        sh: The Google Sheet object where the data will be written.
+        cell: The cell address where the data will be written (e.g., 'A1').
+
+    Returns:
+        None
+    """
     sh.values_update(
-        'MIA List 1!C3',
+        cell,
         params={'valueInputOption': 'RAW'},
         body={'values': mia_list}
     )
 
-
-def write_last_week(mia_list, sh):
-
-    # gspread method that updates the Google sheet while only using 1 api call
-    # First takes the in the name of the sheet and the starting cell
-    # The param is how the data will be input either rows or columns or raw. (raw means the data will be used
-    #       as is and will not be parsed)
-    # The body is the list that will be inputted into the sheet
-    sh.values_update(
-        'MIA List 1!A3',
-        params={'valueInputOption': 'RAW'},
-        body={'values': mia_list}
-    )
-
-
-def write_whole_month(mia_list, sh):
-
-    # gspread method that updates the Google sheet while only using 1 api call
-    # First takes the in the name of the sheet and the starting cell
-    # The param is how the data will be input either rows or columns or raw. (raw means the data will be used
-    #       as is and will not be parsed)
-    # The body is the list that will be inputted into the sheet
-    sh.values_update(
-        'MIA List 1!E3',
-        params={'valueInputOption': 'RAW'},
-        body={'values': mia_list}
-    )
 
 
 def main():
-    # Linking the sheets to the code
+    # Authenticate with Google Sheets
     sa = gspread.service_account()
 
-    # Opening the file that will be getting worked on
+    # Open the Google Sheet
     sh = sa.open('Test Script')
 
-    # Selecting the worksheet that the data will be extracted from
+    # Select the worksheet to extract data from
     worksheet = sh.worksheet('Sheet1')
 
-    # getting all values from the mia list and directly turning it into a np array
+    # Retrieve the data from the worksheet
     raw_array = np.array(worksheet.get_all_values())
 
-    # storing the 2d array returned by list_parsing
+    # Process the data for the current week
     mia_list = cur_week_list(raw_array)
+
+    # Process the data for the last week
     list_last_week = last_week_list(raw_array)
+
+    # Process the data for the entire month
     month_list = make_month_list(raw_array)
 
-    # clearing the spreadsheet with the given range
+    # Clear the destination sheet before writing new data
     sh.values_clear("'MIA List 1'!A1:E1000")
 
-    # Opening the MIA List sheet
+    # Open the destination sheet
     mia_list_sheet = sh.worksheet('MIA List 1')
 
-    # format and print lists needed
+    # Format the destination sheet
     format_sheet(mia_list_sheet)
-    write_cur_week(mia_list, sh)
-    write_last_week(list_last_week, sh)
-    write_whole_month(month_list, sh)
+
+    # Write the data for the current week
+    write_data(mia_list, sh, 'MIA List 1!C3')
+
+    # Write the data for the last week
+    write_data(list_last_week, sh, 'MIA List 1!A3')
+
+    # Write the data for the entire month
+    write_data(month_list, sh, 'MIA List 1!E3')
 
 
 if __name__ == '__main__':
